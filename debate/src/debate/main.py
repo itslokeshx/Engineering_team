@@ -17,9 +17,9 @@ def run():
     """
     Run the crew.
     """
+    motion = input("Enter the motion: ")
     inputs = {
-        'topic': 'best ai model claude vs chatgpt',
-        'current_year': str(datetime.now().year)
+        'motion': motion,
     }
 
     try:
