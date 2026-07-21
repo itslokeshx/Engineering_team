@@ -1,180 +1,44 @@
 {
-  // Display name for this crew
-  "name": "debate",
-
-  // Agents to include — each must have a matching agents/<name>.jsonc file
-  "agents": ["you_are_a_debate_agent", "judge"],
-
-  // Task definitions — executed in order for sequential process
   "tasks": [
     {
-      // Task identifier
-      "name": "you_are_proposing_the_task",
+      // Supporting side
+      "name": "propose",
 
-      // What the task should accomplish
-      // Use {placeholder} inputs here; crewai run prompts for missing values
-      "description": "You are proposing the motion: {motion}.    Come up with a clear argument in favor of the motion.    Be very convincing.",
+      "description": "The motion is: {motion}. Present a clear, concise, and convincing argument supporting the motion.",
 
-      // Clear definition of what the output should look like
-      "expected_output": "Your clear argument in favor of the motion, in a concise manner.",
+      "expected_output": "A persuasive argument supporting the motion in a concise format.",
 
-      // Optional task guardrail(s) validate output before completion
-      // Use "guardrail" for one rule or "guardrails" for many
-      // Failed guardrails retry up to guardrail_max_retries times
-      // "guardrail": "Every factual claim needs context support.",
-      // "guardrails": [
-      //   "Every factual claim must be supported by context.",
-      //   "The answer must match the expected output format."
-      // ],
-      // "guardrail_max_retries": 2,
+      "agent": "debater",
 
-      // Advanced task options:
-      // Docs: https://docs.crewai.com/concepts/tasks
-      // "type": "ConditionalTask",
-      // "condition": { "python": "my_project.conditions.should_run" },
-      // "output_json": { "python": "my_project.models.ReportOutput" },
-      // "output_pydantic": null,
-      // "response_model": null,
-      // "converter_cls": { "python": "my_project.converters.CustomConverter" },
-      // "markdown": false,
-      // "input_files": { "brief": "data/brief.txt" },
-      // "security_config": {},
+      "output_file": "output/propose.md",
+    },
 
-      // Which agent handles this task
-      "agent": "you_are_a_debate_agent"
-
-      // "tools": [],
-      // "human_input": false,
-      // "async_execution": false
-    }
-,
     {
-      // Task identifier
-      "name": "you_are_in_opposition_task",
+      // Opposing side
+      "name": "oppose",
 
-      // What the task should accomplish
-      // Use {placeholder} inputs here; crewai run prompts for missing values
-      "description": "You are in opposition to the motion: {motion}.    Come up with a clear argument against the motion.    Be very convincing.",
+      "description": "The motion is: {motion}. Present a clear, concise, and convincing argument opposing the motion.",
 
-      // Clear definition of what the output should look like
-      "expected_output": "Your clear argument against the motion, in a concise manner.",
+      "expected_output": "A persuasive argument opposing the motion in a concise format.",
 
-      // Optional task guardrail(s) validate output before completion
-      // Use "guardrail" for one rule or "guardrails" for many
-      // Failed guardrails retry up to guardrail_max_retries times
-      // "guardrail": "Every factual claim needs context support.",
-      // "guardrails": [
-      //   "Every factual claim must be supported by context.",
-      //   "The answer must match the expected output format."
-      // ],
-      // "guardrail_max_retries": 2,
+      "agent": "debater",
 
-      // Advanced task options:
-      // Docs: https://docs.crewai.com/concepts/tasks
-      // "type": "ConditionalTask",
-      // "condition": { "python": "my_project.conditions.should_run" },
-      // "output_json": { "python": "my_project.models.ReportOutput" },
-      // "output_pydantic": null,
-      // "response_model": null,
-      // "converter_cls": { "python": "my_project.converters.CustomConverter" },
-      // "markdown": false,
-      // "input_files": { "brief": "data/brief.txt" },
-      // "security_config": {},
+      "output_file": "output/oppose.md",
+    },
 
-      // Which agent handles this task
-      "agent": "you_are_a_debate_agent"
-
-      // "tools": [],
-      // "human_input": false,
-      // "async_execution": false
-    }
-,
     {
-      // Task identifier
-      "name": "review_the_arguments_presented_task",
+      // Judge's verdict
+      "name": "decide",
 
-      // What the task should accomplish
-      // Use {placeholder} inputs here; crewai run prompts for missing values
-      "description": "Review the arguments presented by the debaters and decide which side is more convincing.",
+      "description": "Review the supporting and opposing arguments for the motion: {motion}. Decide which side presented the stronger case and explain your reasoning objectively.",
 
-      // Clear definition of what the output should look like
-      "expected_output": "Your decision on which side is more convincing, and why.",
+      "expected_output": "A final verdict identifying the winning side with a concise explanation based only on the arguments presented.",
 
-      // Optional task guardrail(s) validate output before completion
-      // Use "guardrail" for one rule or "guardrails" for many
-      // Failed guardrails retry up to guardrail_max_retries times
-      // "guardrail": "Every factual claim needs context support.",
-      // "guardrails": [
-      //   "Every factual claim must be supported by context.",
-      //   "The answer must match the expected output format."
-      // ],
-      // "guardrail_max_retries": 2,
+      "agent": "judge",
 
-      // Advanced task options:
-      // Docs: https://docs.crewai.com/concepts/tasks
-      // "type": "ConditionalTask",
-      // "condition": { "python": "my_project.conditions.should_run" },
-      // "output_json": { "python": "my_project.models.ReportOutput" },
-      // "output_pydantic": null,
-      // "response_model": null,
-      // "converter_cls": { "python": "my_project.converters.CustomConverter" },
-      // "markdown": false,
-      // "input_files": { "brief": "data/brief.txt" },
-      // "security_config": {},
+      "context": ["propose", "oppose"],
 
-      // Which agent handles this task
-      "agent": "judge"
-
-      // "tools": [],
-      // "human_input": false,
-      // "async_execution": false
-    }
-
+      "output_file": "output/verdict.md",
+    },
   ],
-
-  // Execution process
-  // "sequential" — tasks run in order, each receiving prior task outputs
-  // "hierarchical" — a manager agent delegates tasks (requires manager_llm)
-  "process": "sequential",
-
-  // Enable verbose logging during execution
-  "verbose": true,
-
-  // Enable crew memory — persists context and learnings across tasks
-  "memory": false,
-
-  // Automatically plan the execution strategy before running tasks
-  // "planning": false,
-
-  // LLM for the planning step (used when planning is true)
-  // "planning_llm": "openai/gpt-4o",
-
-  // LLM for the manager agent (required when process is "hierarchical")
-  // "manager_llm": "openai/gpt-4o",
-
-  // Crew-level LLM fields also accept object form for custom endpoints
-  // "chat_llm": {"model": "llama3", "provider": "ollama", "base_url": "http://localhost:11434"},
-
-  // Advanced crew options:
-  // Docs: https://docs.crewai.com/concepts/crews
-  // For hierarchical crews, manager_agent can reference an agents/<name>.jsonc file
-  // that is not included in the "agents" list.
-  // "manager_agent": "you_are_a_debate_agent",
-  // "before_kickoff_callbacks": [{"python": "my_project.callbacks.before_kickoff"}],
-  // "after_kickoff_callbacks": [{"python": "my_project.callbacks.after_kickoff"}],
-  // "function_calling_llm": "openai/gpt-4o-mini",
-  // "max_rpm": null,
-  // "cache": true,
-  // "knowledge_sources": [],
-  // "embedder": {},
-  // "output_log_file": "crew.log",
-  // "stream": false,
-  // "tracing": false,
-  // "security_config": {},
-
-  // Optional runtime input defaults.
-  // Use {placeholder} in agent or task text, for example:
-  // "description": "Research {topic} and write a brief"
-  // `crewai run` prompts for any placeholders missing from this object.
-  "inputs": {}
 }
