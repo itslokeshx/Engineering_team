@@ -4,7 +4,7 @@ server tool whose name contains hyphens (e.g. Context7's `resolve-library-id`)
 becomes unreachable. Re-verify on crewai upgrade.
 
 Also includes Groq API Key rotation (GROQ_KEY_1..6), invalid key auto-skip,
-and rate-limit retry logic.
+tool call JSON parse retry, and rate-limit retry logic.
 
 Importing this module applies the patch as a side effect.
 """
@@ -86,7 +86,7 @@ def _resolve_external(self, mcp_ref: str) -> list[BaseTool]:
 MCPToolResolver._resolve_external = _resolve_external
 
 
-# --- Groq API Key Rotation, Invalid Key Filtering & Rate Limit Handler ---
+# --- Groq API Key Rotation, Invalid Key Filtering & Rate Limit / Tool Call Retry Handler ---
 _key_lock = threading.Lock()
 _key_counter = 0
 _invalid_keys: set[str] = set()
@@ -172,6 +172,13 @@ def rate_limit_safe_completion(*args, **kwargs):
                 "RateLimitError" in type(e).__name__ or
                 "429" in err_str
             )
+            is_tool_use_failed = (
+                "tool_use_failed" in err_str or
+                "Failed to parse tool call arguments" in err_str
+            )
+            is_server_error = (
+                "500" in err_str or "502" in err_str or "503" in err_str or "504" in err_str
+            )
 
             if is_invalid_key:
                 cur_key_val = kwargs.get("api_key") or os.environ.get("GROQ_API_KEY")
@@ -190,7 +197,22 @@ def rate_limit_safe_completion(*args, **kwargs):
                         continue
                 raise e
 
-            elif is_rate_limit:
+            elif is_tool_use_failed:
+                if attempt == max_attempts - 1:
+                    raise e
+                remaining_keys = get_groq_keys()
+                if remaining_keys:
+                    key_tuple = rotate_groq_key()
+                    if key_tuple:
+                        current_key_name, next_key_val = key_tuple
+                        kwargs["api_key"] = next_key_val
+                        os.environ["GROQ_API_KEY"] = next_key_val
+                        masked_next = next_key_val[:7] + "..." + next_key_val[-4:] if len(next_key_val) > 11 else "***"
+                        print(f"\n[ToolCallRetry] Hit tool call JSON parse error on attempt {attempt+1}/{max_attempts}. Rotating to {current_key_name} ({masked_next}) and retrying immediately...")
+                        continue
+                raise e
+
+            elif is_rate_limit or is_server_error:
                 if attempt == max_attempts - 1:
                     raise e
                 
@@ -211,7 +233,7 @@ def rate_limit_safe_completion(*args, **kwargs):
                                 wait_time = (float(match_ms.group(1)) / 1000.0) + 1.0
                             elif match_s:
                                 wait_time = float(match_s.group(1)) + 1.0
-                            print(f"\n[RateLimitHandler] All available keys currently rate limited. Sleeping for {wait_time:.2f}s before retrying (attempt {attempt+1}/{max_attempts})...")
+                            print(f"\n[RateLimitHandler] All available keys currently rate limited/busy. Sleeping for {wait_time:.2f}s before retrying (attempt {attempt+1}/{max_attempts})...")
                             time.sleep(wait_time)
                         else:
                             print(f"\n[RateLimitHandler] Hit rate limit on attempt {attempt+1}/{max_attempts}. Rotating immediately to {current_key_name} ({masked_next})...")
