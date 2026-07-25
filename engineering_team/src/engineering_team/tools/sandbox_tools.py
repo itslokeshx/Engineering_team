@@ -18,7 +18,7 @@ def reset_sandbox() -> None:
     subprocess.run(["uv", "add", "gradio"], cwd=SANDBOX_DIR, check=True)
 
 @tool("List Sandbox Files")
-def list_sandbox_files() -> str:
+def list_sandbox_files(_: str = "") -> str:
     """
     List the filenames currently in the sandbox directory.
 
