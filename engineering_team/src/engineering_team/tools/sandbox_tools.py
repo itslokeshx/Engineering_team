@@ -11,19 +11,19 @@ SANDBOX_DIR.mkdir(parents=True, exist_ok=True)
 def reset_sandbox() -> None:
     """Wipe the sandbox and re-initialize it as a fresh uv project with gradio."""
     if SANDBOX_DIR.exists():
-        shutil.rmtree(SANDBOX_DIR)
-    SANDBOX_DIR.mkdir(parents=True)
+        shutil.rmtree(SANDBOX_DIR, ignore_errors=True)
+    SANDBOX_DIR.mkdir(parents=True, exist_ok=True)
 
     subprocess.run(["uv", "init", "--bare", "--python", "3.13"], cwd=SANDBOX_DIR, check=True)
     subprocess.run(["uv", "add", "gradio"], cwd=SANDBOX_DIR, check=True)
 
 @tool("List Sandbox Files")
-def list_sandbox_files(_: str = "") -> str:
+def list_sandbox_files(path: str = ".") -> str:
     """
     List the filenames currently in the sandbox directory.
 
     Args:
-        _: Unused placeholder argument (this tool takes no real input).
+        path: Optional relative directory path (defaults to "." for sandbox root).
     Returns:
         A newline-separated list of filenames, or a message if the
         sandbox is empty.

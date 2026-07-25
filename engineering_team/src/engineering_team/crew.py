@@ -79,5 +79,5 @@ class EngineeringTeam():
             process=Process.sequential,
             verbose=True,
             tracing=True,
-           
+            max_rpm=1,
         )

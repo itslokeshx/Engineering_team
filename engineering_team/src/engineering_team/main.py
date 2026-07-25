@@ -8,6 +8,9 @@ import engineering_team.patch  # noqa: F401 — applies CrewAI MCP monkey-patch 
 from engineering_team.crew import EngineeringTeam
 from .tools.sandbox_tools import reset_sandbox
 
+import litellm
+litellm.num_retries = 10
+
 warnings.filterwarnings("ignore", category=SyntaxWarning, module="pysbd")
 
 

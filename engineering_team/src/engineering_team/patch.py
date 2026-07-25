@@ -68,3 +68,35 @@ def _resolve_external(self, mcp_ref: str) -> list[BaseTool]:
 
 
 MCPToolResolver._resolve_external = _resolve_external
+
+
+import re
+import time
+import litellm
+
+_original_completion = litellm.completion
+
+def rate_limit_safe_completion(*args, **kwargs):
+    max_attempts = 10
+    for attempt in range(max_attempts):
+        try:
+            return _original_completion(*args, **kwargs)
+        except Exception as e:
+            if "Rate limit" in str(e) or "rate_limit_exceeded" in str(e) or "RateLimitError" in type(e).__name__:
+                if attempt == max_attempts - 1:
+                    raise e
+                msg = str(e)
+                wait_time = 10.0
+                match_ms = re.search(r"Please try again in (\d+(?:\.\d+)?)ms", msg)
+                match_s = re.search(r"Please try again in (\d+(?:\.\d+)?)s", msg)
+                if match_ms:
+                    wait_time = (float(match_ms.group(1)) / 1000.0) + 1.0
+                elif match_s:
+                    wait_time = float(match_s.group(1)) + 1.0
+                print(f"\n[RateLimitHandler] Hit Groq TPM limit. Sleeping for {wait_time:.2f}s before retry (attempt {attempt+1}/{max_attempts})...")
+                time.sleep(wait_time)
+            else:
+                raise e
+
+litellm.completion = rate_limit_safe_completion
+
