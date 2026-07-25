@@ -22,6 +22,8 @@ def list_sandbox_files(_: str = "") -> str:
     """
     List the filenames currently in the sandbox directory.
 
+    Args:
+        _: Unused placeholder argument (this tool takes no real input).
     Returns:
         A newline-separated list of filenames, or a message if the
         sandbox is empty.
@@ -97,7 +99,5 @@ def _never_cache(*_args, **_kwargs) -> bool:
     return False
 
 
-# Sandbox state changes between calls (files appear/change/run), so caching tool
-# results would feed agents stale data. Opt out of CrewAI's default tool caching.
 for _t in sandbox_tools:
     _t.cache_function = _never_cache
