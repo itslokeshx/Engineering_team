@@ -4,7 +4,7 @@ server tool whose name contains hyphens (e.g. Context7's `resolve-library-id`)
 becomes unreachable. Re-verify on crewai upgrade.
 
 Also includes Groq API Key rotation (GROQ_KEY_1..6), invalid key auto-skip,
-tool call JSON parse retry, and rate-limit retry logic.
+tool call JSON parse retry, and robust rate-limit retry logic with dynamic backoff.
 
 Importing this module applies the patch as a side effect.
 """
@@ -154,7 +154,7 @@ def rate_limit_safe_completion(*args, **kwargs):
             masked_val = key_val[:7] + "..." + key_val[-4:] if len(key_val) > 11 else "***"
             print(f"\n[KeyRotator] Rotating key for request -> {current_key_name} ({masked_val})")
 
-    max_attempts = max(10, len(groq_keys) * 2 if groq_keys else 10)
+    max_attempts = max(50, len(groq_keys) * 10 if groq_keys else 50)
     for attempt in range(max_attempts):
         try:
             return _original_completion(*args, **kwargs)
@@ -170,7 +170,9 @@ def rate_limit_safe_completion(*args, **kwargs):
                 "Rate limit" in err_str or 
                 "rate_limit_exceeded" in err_str or 
                 "RateLimitError" in type(e).__name__ or
-                "429" in err_str
+                "429" in err_str or
+                "413" in err_str or
+                "Request too large" in err_str
             )
             is_tool_use_failed = (
                 "tool_use_failed" in err_str or
@@ -225,21 +227,22 @@ def rate_limit_safe_completion(*args, **kwargs):
                         os.environ["GROQ_API_KEY"] = next_key_val
                         masked_next = next_key_val[:7] + "..." + next_key_val[-4:] if len(next_key_val) > 11 else "***"
                         
+                        wait_time = 12.0
+                        match_ms = re.search(r"Please try again in (\d+(?:\.\d+)?)ms", err_str)
+                        match_s = re.search(r"Please try again in (\d+(?:\.\d+)?)s", err_str)
+                        if match_ms:
+                            wait_time = (float(match_ms.group(1)) / 1000.0) + 1.0
+                        elif match_s:
+                            wait_time = float(match_s.group(1)) + 1.0
+
                         if (attempt + 1) % len(remaining_keys) == 0:
-                            wait_time = 5.0
-                            match_ms = re.search(r"Please try again in (\d+(?:\.\d+)?)ms", err_str)
-                            match_s = re.search(r"Please try again in (\d+(?:\.\d+)?)s", err_str)
-                            if match_ms:
-                                wait_time = (float(match_ms.group(1)) / 1000.0) + 1.0
-                            elif match_s:
-                                wait_time = float(match_s.group(1)) + 1.0
-                            print(f"\n[RateLimitHandler] All available keys currently rate limited/busy. Sleeping for {wait_time:.2f}s before retrying (attempt {attempt+1}/{max_attempts})...")
+                            print(f"\n[RateLimitHandler] All {len(remaining_keys)} keys currently rate limited/busy. Waiting {wait_time:.2f}s for TPM window to clear (attempt {attempt+1}/{max_attempts})...")
                             time.sleep(wait_time)
                         else:
                             print(f"\n[RateLimitHandler] Hit rate limit on attempt {attempt+1}/{max_attempts}. Rotating immediately to {current_key_name} ({masked_next})...")
                         continue
 
-                wait_time = 10.0
+                wait_time = 12.0
                 match_ms = re.search(r"Please try again in (\d+(?:\.\d+)?)ms", err_str)
                 match_s = re.search(r"Please try again in (\d+(?:\.\d+)?)s", err_str)
                 if match_ms:

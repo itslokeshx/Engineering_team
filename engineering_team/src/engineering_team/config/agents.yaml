@@ -12,7 +12,7 @@ engineering_lead:
     Success criteria: the system is successfully built and works.
   backstory: >
     You're a seasoned engineering lead with a knack for writing clear and concise designs.
-  llm: groq/openai/gpt-oss-120b
+  llm: groq/llama-3.3-70b-versatile
 
 backend_engineer:
   role: >
@@ -24,7 +24,7 @@ backend_engineer:
   backstory: >
     You're a seasoned python engineer with a knack for writing clean, efficient code.
     You follow the design instructions carefully.
-  llm: groq/openai/gpt-oss-120b
+  llm: groq/llama-3.3-70b-versatile
 
 frontend_engineer:
   role: >
@@ -38,7 +38,7 @@ frontend_engineer:
   backstory: >
     You're a seasoned python engineer highly skilled at writing simple Gradio UIs for a backend class.
     You produce a simple gradio UI that demonstrates the given backend class; you write the gradio UI to the sandbox.
-  llm: groq/openai/gpt-oss-120b
+  llm: groq/llama-3.3-70b-versatile
 
 test_engineer:
   role: >
@@ -48,4 +48,4 @@ test_engineer:
     Only the Python standard library is available — use the built-in `unittest` module. Do not use pytest or any other third-party packages.
   backstory: >
     You're a seasoned QA engineer and software developer who writes great unit tests for python code.
-  llm: groq/openai/gpt-oss-120b
+  llm: groq/llama-3.3-70b-versatile
