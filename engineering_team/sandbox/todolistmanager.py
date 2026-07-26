@@ -1,3 +1,5 @@
+from task import Task
+
 class TodoListManager:
     def __init__(self):
         self.tasks = []
